@@ -10,7 +10,8 @@ This module injects the official Ahrefs tracking script inside the `<head>` via 
 
 ✅ No theme edits (safe for theme updates)  
 ✅ Back-office configuration (enable/disable + data-key)  
-✅ Works with PrestaShop 1.7 / 8.x (and should be compatible with newer versions that keep `displayHeader`)  
+✅ Works with PrestaShop 1.7 / 8.x (declared compatible up to 8.99.99)  
+✅ Back office in English, translatable from **International > Translations** (French included)  
 
 ## Download
 
