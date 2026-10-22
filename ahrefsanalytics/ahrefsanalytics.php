@@ -11,7 +11,10 @@
  *   system ($this->l() + translations/<iso>.php), so any language can be
  *   added from International > Translations.
  * - The data-key is validated on save. Pasting the whole Ahrefs snippet is
- *   accepted: the key is extracted from its data-key attribute.
+ *   accepted: the key is extracted from its data-key attribute. An empty
+ *   field erases the stored key (no separate "clear" switch since 1.1.2).
+ * - Back office follows the standard PrestaShop look: one HelperForm panel,
+ *   help box inside it, plain wording for non technical merchants.
  * - Single file on purpose, no namespace, no autoloader.
  *
  * Author : ADLX (https://github.com/iamadlx)
@@ -40,7 +43,7 @@ class AhrefsAnalytics extends Module
     {
         $this->name = 'ahrefsanalytics';
         $this->tab = 'analytics_stats';
-        $this->version = '1.1.1';
+        $this->version = '1.1.2';
         $this->author = 'ADLX';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -49,7 +52,7 @@ class AhrefsAnalytics extends Module
         parent::__construct();
 
         $this->displayName = $this->l('Ahrefs Web Analytics');
-        $this->description = $this->l('Injects the Ahrefs Web Analytics script in the page head via displayHeader (theme-update safe).');
+        $this->description = $this->l('Adds Ahrefs Web Analytics to every page of your shop, without editing your theme.');
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall this module? Its settings, including the saved key, will be deleted.');
     }
 
@@ -92,86 +95,58 @@ class AhrefsAnalytics extends Module
         $output = '';
 
         if (Tools::isSubmit('submitAhrefsAnalytics')) {
-            $enabled = (int) Tools::getValue(self::CFG_ENABLED);
-            $clearKey = (int) Tools::getValue('AHREFS_ANALYTICS_CLEAR_KEY');
+            $enabled = (int) Tools::getValue(self::CFG_ENABLED) === 1;
             $newKey = trim((string) Tools::getValue(self::CFG_KEY));
 
+            // An empty field erases the key; a non empty one must be valid.
             $validKey = ($newKey !== '') ? $this->normalizeKey($newKey) : '';
 
-            if ($clearKey !== 1 && $validKey === false) {
+            if ($validKey === false) {
                 // Nothing is saved: a wrong key must not silently replace a working one.
-                $output .= $this->displayError($this->l('This does not look like an Ahrefs data-key. Copy only the value of data-key from the Ahrefs installation snippet (about 22 characters, letters, digits, + and /), or paste the whole snippet.'));
+                $output .= $this->displayError($this->l('This does not look like an Ahrefs key. Paste the installation code given by Ahrefs, or only the key it contains (about 22 letters and digits).'));
             } else {
-                // Enabled state is always persisted, even if the key field is empty
                 Configuration::updateValue(self::CFG_ENABLED, $enabled ? 1 : 0);
-
-                if ($clearKey === 1) {
-                    Configuration::updateValue(self::CFG_KEY, '');
-                } elseif ($validKey !== '') {
-                    // Only replace the stored key if the user typed something
-                    Configuration::updateValue(self::CFG_KEY, $validKey);
-                }
+                Configuration::updateValue(self::CFG_KEY, $validKey);
 
                 $output .= $this->displayConfirmation($this->l('Settings saved.'));
+                if ($enabled && $validKey === '') {
+                    $output .= $this->displayWarning($this->l('Tracking is switched on, but no key is saved: Ahrefs receives nothing until you paste your key.'));
+                }
             }
         }
 
-        $output .= $this->renderInfoPanel();
-        $output .= '<div class="bootstrap">' . $this->renderForm() . '</div>';
-
-        return $output;
+        return $output . $this->renderForm();
     }
 
-    protected function renderInfoPanel()
+    /**
+     * Help box shown inside the settings panel (HelperForm "description",
+     * rendered as alert alert-info by the core template).
+     * l() already returns HTML-escaped strings, safe to concatenate.
+     */
+    protected function renderHelp()
     {
-        $enabled = (int) Configuration::get(self::CFG_ENABLED);
+        $enabled = (int) Configuration::get(self::CFG_ENABLED) === 1;
         $key = (string) Configuration::get(self::CFG_KEY);
         $hasKey = ($key !== '');
 
-        $statusLabel = $enabled ? $this->l('Enabled') : $this->l('Disabled');
-        $statusClass = $enabled ? 'label-success' : 'label-default';
+        if ($enabled && $hasKey) {
+            $status = '<span class="label label-success">' . $this->l('Active: Ahrefs receives your visits') . '</span>';
+        } elseif ($enabled) {
+            $status = '<span class="label label-warning">' . $this->l('Switched on, but no key saved') . '</span>';
+        } else {
+            $status = '<span class="label label-default">' . $this->l('Off') . '</span>';
+        }
 
-        // The data-key is public (it is printed in every page), so it is shown in clear
-        $shownKey = $hasKey ? Tools::htmlentitiesUTF8($key) : $this->l('No key saved yet');
-
-        $ahrefsUrl = 'https://ahrefs.com/webmaster-tools';
-
-        // l() already returns HTML-escaped strings, safe to concatenate
-        $html = '
-        <div class="bootstrap" style="margin-top:10px;">
-          <div class="alert alert-info" role="alert" style="margin-bottom:15px;">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-              <img src="' . $this->_path . 'logo.png" alt="Ahrefs" style="width:20px; height:20px;" />
-              <strong style="font-size:16px;">' . $this->l('How to set up Ahrefs Web Analytics') . '</strong>
-            </div>
-
-            <ol style="margin:0 0 10px 18px;">
-              <li>' . $this->l('Create a free Ahrefs Webmaster Tools account (if you don\'t have one).') . '</li>
-              <li>' . $this->l('Open Web Analytics settings and copy your data-key value.') . '</li>
-              <li>' . $this->l('Paste the key below, enable tracking, and save.') . '</li>
-              <li>' . $this->l('Then click "Verify installation" in Ahrefs.') . '</li>
-            </ol>
-
-            <p style="margin:0 0 10px 0;">
-              <a class="btn btn-default" href="' . $ahrefsUrl . '" target="_blank" rel="noopener noreferrer">
-                ' . $this->l('Open Ahrefs Webmaster Tools') . '
-              </a>
-            </p>
-
-            <p style="margin:0;">
-              <strong>' . $this->l('Current status:') . '</strong>
-              <span class="label ' . $statusClass . '">' . $statusLabel . '</span>
-              &nbsp;&nbsp;|&nbsp;&nbsp;
-              <strong>' . $this->l('Saved key:') . '</strong>
-              <code>' . $shownKey . '</code>
-            </p>
-            <p style="margin:6px 0 0 0; font-size:12px; opacity:0.85;">
-              ' . $this->l('Note: this module injects the script inside the <head> tag only (displayHeader).') . '
-            </p>
-          </div>
-        </div>';
-
-        return $html;
+        return '<p><strong>' . $this->l('How to set up Ahrefs Web Analytics') . '</strong></p>'
+            . '<ol>'
+            . '<li>' . $this->l('Create a free Ahrefs Webmaster Tools account, if you do not have one yet.') . '</li>'
+            . '<li>' . $this->l('In Ahrefs, open Web Analytics, add your shop and copy the installation code.') . '</li>'
+            . '<li>' . $this->l('Paste it in the field below, switch tracking on and click Save.') . '</li>'
+            . '<li>' . $this->l('Back in Ahrefs, click Verify installation.') . '</li>'
+            . '</ol>'
+            . '<p><a class="btn btn-default" href="https://ahrefs.com/webmaster-tools" target="_blank" rel="noopener noreferrer">'
+            . '<i class="icon-external-link"></i> ' . $this->l('Open Ahrefs Webmaster Tools') . '</a></p>'
+            . '<p style="margin-bottom:0;"><strong>' . $this->l('Current status:') . '</strong> ' . $status . '</p>';
     }
 
     protected function renderForm()
@@ -182,6 +157,7 @@ class AhrefsAnalytics extends Module
                     'title' => $this->l('Ahrefs Web Analytics settings'),
                     'icon' => 'icon-cogs',
                 ],
+                'description' => $this->renderHelp(),
                 'input' => [
                     [
                         'type' => 'switch',
@@ -192,26 +168,15 @@ class AhrefsAnalytics extends Module
                             ['id' => 'enabled_on', 'value' => 1, 'label' => $this->l('Enabled')],
                             ['id' => 'enabled_off', 'value' => 0, 'label' => $this->l('Disabled')],
                         ],
-                        'desc' => $this->l('Turn Ahrefs tracking on or off.'),
+                        'desc' => $this->l('When switched off, nothing is added to your pages.'),
                     ],
                     [
                         'type' => 'text',
-                        'label' => $this->l('Ahrefs Analytics key'),
+                        'label' => $this->l('Ahrefs key'),
                         'name' => self::CFG_KEY,
                         'required' => false,
-                        'desc' => $this->l('Paste your Ahrefs data-key value (from the installation snippet). Pasting the whole snippet also works.'),
+                        'desc' => $this->l('Paste the installation code from Ahrefs, or only the key it contains. To remove the key, empty this field and click Save.'),
                         'hint' => $this->l('Example format: OIsSv/REMT+oZHSA8x4AqA'),
-                    ],
-                    [
-                        'type' => 'switch',
-                        'label' => $this->l('Clear stored key'),
-                        'name' => 'AHREFS_ANALYTICS_CLEAR_KEY',
-                        'is_bool' => true,
-                        'values' => [
-                            ['id' => 'clear_on', 'value' => 1, 'label' => $this->l('Yes')],
-                            ['id' => 'clear_off', 'value' => 0, 'label' => $this->l('No')],
-                        ],
-                        'desc' => $this->l('If enabled, the currently saved key will be deleted when you save.'),
                     ],
                 ],
                 'submit' => [
@@ -228,13 +193,12 @@ class AhrefsAnalytics extends Module
         $helper->allow_employee_form_lang = (int) Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG');
         $helper->identifier = $this->identifier;
         $helper->submit_action = 'submitAhrefsAnalytics';
-        $helper->currentIndex = AdminController::$currentIndex . '&configure=' . $this->name;
+        $helper->currentIndex = AdminController::$currentIndex . '&' . http_build_query(['configure' => $this->name]);
         $helper->token = Tools::getAdminTokenLite('AdminModules');
         $helper->bootstrap = true;
 
         $helper->fields_value[self::CFG_ENABLED] = (int) Configuration::get(self::CFG_ENABLED);
         $helper->fields_value[self::CFG_KEY] = (string) Configuration::get(self::CFG_KEY);
-        $helper->fields_value['AHREFS_ANALYTICS_CLEAR_KEY'] = 0;
 
         return $helper->generateForm([$fields_form]);
     }

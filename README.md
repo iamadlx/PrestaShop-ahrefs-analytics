@@ -32,7 +32,7 @@ PrestaShop hook. Paste your key, switch it on, done.
 - **No theme edits.** Theme updates cannot remove it.
 - **Key checked on save.** An invalid key shows an error instead of silently tracking nothing. You can
   also paste the whole snippet from Ahrefs: the module extracts the key for you.
-- **One switch** to pause tracking without losing your key.
+- **One switch** to pause tracking without losing your key. To remove the key, empty the field and save.
 - **Translatable.** Back office in English, with French included; any other language can be translated from **International > Translations**.
 - **Lightweight.** No database table, no cron, nothing loaded in the back office outside its own page.
 

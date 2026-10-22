@@ -2,8 +2,8 @@
 <module>
   <name>ahrefsanalytics</name>
   <displayName><![CDATA[Ahrefs Web Analytics]]></displayName>
-  <version><![CDATA[1.1.1]]></version>
-  <description><![CDATA[Injects the Ahrefs Web Analytics script in the page head via displayHeader (theme-update safe).]]></description>
+  <version><![CDATA[1.1.2]]></version>
+  <description><![CDATA[Adds Ahrefs Web Analytics to every page of your shop, without editing your theme.]]></description>
   <author><![CDATA[ADLX]]></author>
   <tab><![CDATA[analytics_stats]]></tab>
   <is_configurable>1</is_configurable>
