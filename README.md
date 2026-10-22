@@ -91,8 +91,7 @@ Issues and pull requests are welcome. Please describe your PrestaShop version an
 ## Hosting recommendation (optional)
 
 Looking for a host with **1-click PrestaShop installation**, easy updates and automatic backups?
-Infomaniak offers a dedicated PrestaShop hosting plan (affiliate link):
-[infomaniak.com, PrestaShop hosting](https://www.infomaniak.com/fr/creer-un-site/cms/hebergement-prestashop?utm_term=5f980010e7533)
+[Infomaniak](https://www.infomaniak.com/en/create-a-website/cms/prestashop-hosting?utm_term=5f980010e7533) offers a dedicated PrestaShop hosting plan (affiliate link).
 
 ## License
 
